@@ -75,7 +75,7 @@ bash setup.sh --with-python   # also builds the pysuperansac module
 Full, step-by-step instructions (system packages, GPU/RoMa setup, portability
 flags) are in **[INSTALL.md](INSTALL.md)**.
 
-## Example (ii): synthetic experiments + plots
+## Example (i): synthetic experiments + plots
 
 Pure C++/CPU, no dataset or GPU. Compares the 7-AC solver against GS-5PC,
 RS-20PC and RS-44PC over sweeps of rolling-shutter magnitude, point/affine
@@ -86,7 +86,7 @@ bash examples/run_synthetic.sh 50      # 50 trials/method
 # → out/synthetic.csv and figures in out/plots/ (benchmark_pose, benchmark_rs, ...)
 ```
 
-## Example (i): real data + baseline comparison (TUM Rolling-Shutter)
+## Example (ii): real data + baseline comparison (TUM Rolling-Shutter)
 
 Downloads a real RS sequence, extracts affine correspondences with **RoMa**,
 runs our solver and the baselines (GS-5PC, RS-20PC, RS-44PC), and prints an
@@ -118,7 +118,6 @@ python examples/run_real_data.py --dataset_root datasets/tum_rs --sequences 1
 ## License & acknowledgments
 
 Released under the [MIT License](LICENSE). Built on
-[SupeRANSAC](https://github.com/danini/superansac). The `gs_2ac` baseline
-(optional) uses [Graph-Cut RANSAC](https://github.com/danini/graph-cut-ransac).
+[SupeRANSAC](https://github.com/danini/superansac).
 The TUM Rolling-Shutter dataset is by
 [Schubert et al.](https://cvg.cit.tum.de/data/datasets/rolling-shutter-dataset).

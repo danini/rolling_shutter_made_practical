@@ -69,7 +69,7 @@ runs it for you.
 
 ---
 
-## 4. Build the C++ benchmark (Example ii)
+## 4. Build the C++ benchmark
 
 ```bash
 bash setup.sh
@@ -107,7 +107,7 @@ Run it:
 
 ---
 
-## 5. Build the Python module (Example i)
+## 5. Build the Python module
 
 ```bash
 bash setup.sh --with-python      # or: pip install ./external/superansac
@@ -142,13 +142,9 @@ Extracted ACs are cached to HDF5, so **re-runs of the same sequence do not need
 a GPU**. AffNet (`--features KeyNetAffNetHardNet`) is a lighter alternative that
 uses `kornia` without RoMa.
 
-The optional `gs_2ac` baseline additionally needs
-[`pygcransac`](https://github.com/danini/graph-cut-ransac); it is **not**
-required for the GS-5PC / RS-20PC / RS-44PC comparison and is omitted by default.
-
 ---
 
-## 6. Download real data (Example i)
+## 6. Download real data
 
 ```bash
 bash examples/download_tum_rs.sh datasets/tum_rs 1     # sequence 1 (~GBs)
@@ -181,5 +177,3 @@ python examples/run_real_data.py --dataset_root datasets/tum_rs --sequences 1
 - **`fatal error: pybind_helpers.h`** — the overlay was not applied before
   `pip install`; run `apply_overlay.sh` first (or use `setup.sh --with-python`).
 - **OpenCV/Boost not found** — pass `-DOpenCV_DIR=...` / `-DBOOST_ROOT=...`.
-- **`ImportError: pygcransac`** — only needed for `gs_2ac`; drop it from
-  `--methods` or install graph-cut-ransac.
