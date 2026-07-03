@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+*.o
+*.so
+*.so.*
+*.a
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+
+# Results / outputs
+out/
+results/
+plots/
+*.csv
+*.log
+!bm_reference*.csv
+
+# Datasets (downloaded by examples/download_tum_rs.sh) — anchored to repo root
+# so the loader package rs_overlay/tests/datasets/ is NOT ignored.
+/datasets/
+/data/
+*.h5
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp

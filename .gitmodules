@@ -1,0 +1,4 @@
+[submodule "external/superansac"]
+	path = external/superansac
+	url = https://github.com/danini/superansac.git
+	branch = main
