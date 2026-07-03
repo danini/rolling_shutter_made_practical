@@ -35,10 +35,19 @@ Pose AUC (higher is better) and median RS velocity errors `ε_ω`/`ε_v`
 | GS-5PC (Nistér)      | 0.861 | 0.908 | 0.934 | –     | –     | 5.3  |
 | **Proposed (7-AC)**  | **0.897** | **0.948** | **0.973** | **0.043** | **0.051** | 7.5 |
 
-The proposed solver is the most accurate in pose **and** the only RS solver
-with usable translational-velocity estimates (baselines' `ε_v` ≈ 8–13), while
-running ~6× faster than RS-44PC. On the global-shutter EuRoC MAV dataset it
-matches GS-5PC and correctly recovers near-zero RS motion.
+Numbers are from the paper (single, consistent hardware). The proposed solver
+is the most accurate in pose **and** the only RS solver with usable
+translational-velocity estimates (baselines' `ε_v` ≈ 8–13). On the
+global-shutter EuRoC MAV dataset it matches GS-5PC and correctly recovers
+near-zero RS motion.
+
+> **Runtime update.** The minimal solver has since been optimized (~0.2 ms per
+> call). Re-timing the full pipeline for the Proposed method on an RTX 4090
+> (all 10 TUM-RS sequences, stride 10, RoMa, `estimateRSEssentialMatrix7AC`)
+> gives **≈1.0 s per image pair** (mean over 1000 pairs), down from the 7.5 s
+> above. The baseline timings are the paper's original measurements and were
+> not re-run on this hardware, so the table's runtime column is not a
+> same-machine comparison.
 
 ## Repository layout
 
