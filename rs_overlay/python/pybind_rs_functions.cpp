@@ -381,10 +381,6 @@ create_baseline_solvers(const std::string& method, double fy_over_h)
         return { new Dai20ptSolver(fy_over_h), new Dai20ptSolver(fy_over_h) };
     if (method == "dai_44pt")
         return { new Dai44ptSolver(fy_over_h), new Dai44ptSolver(fy_over_h) };
-    // GS 2-AC baseline (Barath & Hajder 2018): no RS awareness.
-    // Uses the same poselib BA non-minimal solver as the GS 5-point estimator.
-    if (method == "gs_2ac")
-        return { new GSTwoACSolver(), new GSBundleAdjustmentSolver() };
     throw std::invalid_argument("Unknown RS baseline method: " + method);
 }
 

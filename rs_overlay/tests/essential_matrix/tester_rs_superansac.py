@@ -61,12 +61,6 @@ extract_affine_correspondences_roma = None
 _roma_model = None
 
 import pysuperansac
-# pygcransac is only needed for the optional `gs_2ac` baseline. Keep it
-# optional so the GS-5PC / RS-20PC / RS-44PC / 7-AC comparison runs without it.
-try:
-    import pygcransac
-except ImportError:
-    pygcransac = None
 
 # TUM-RS dataset loader lives in tests/datasets/
 sys.path.insert(0, os.path.join(TESTS_DIR, "datasets"))
@@ -291,7 +285,7 @@ def run_rs_baseline(acs_12col, method, fy_over_h, image_sizes, cfg):
     Baseline methods: dai_20pt, dai_44pt (Dai et al. CVPR 2016).
     Returns (model_8x3, inliers, time_ms).
     """
-    min_pts = {"dai_20pt": 20, "dai_44pt": 44, "gs_2ac": 2}.get(method, 20)
+    min_pts = {"dai_20pt": 20, "dai_44pt": 44}.get(method, 20)
     if acs_12col.shape[0] < min_pts:
         return None, [], 0.0
 
@@ -307,90 +301,6 @@ def run_rs_baseline(acs_12col, method, fy_over_h, image_sizes, cfg):
     )
     toc = time.perf_counter()
     return model, list(inliers), (toc - tic) * 1e3
-
-
-def _acs12_to_pygcransac(acs_12col, K1, K2):
-    """Convert 12-col normalised ACs to pygcransac's 8-col pixel format.
-
-    Our 12-col: [x1n, y1n, x2n, y2n, tau1, tau2, J00, J10, J20, J01, J11, J21]
-      where J = dq2/dq1 in normalised coords (col-major), J is 3×2, row 3 is zero.
-
-    pygcransac 8-col: [x1p, y1p, x2p, y2p, A00, A01, A10, A11] in PIXEL coords
-      where A = LAF2[:,:2] @ inv(LAF1[:,:2]) in pixel space.
-
-    Relation: J_2x2 = diag(1/f2) @ A_pix @ diag(f1)
-           => A_pix = diag(f2) @ J_2x2 @ diag(1/f1)
-    """
-    fx1, fy1, cx1, cy1 = K1[0, 0], K1[1, 1], K1[0, 2], K1[1, 2]
-    fx2, fy2, cx2, cy2 = K2[0, 0], K2[1, 1], K2[0, 2], K2[1, 2]
-
-    N = acs_12col.shape[0]
-    out = np.empty((N, 8), dtype=np.float64)
-
-    # Pixel coordinates
-    out[:, 0] = acs_12col[:, 0] * fx1 + cx1  # x1_pix
-    out[:, 1] = acs_12col[:, 1] * fy1 + cy1  # y1_pix
-    out[:, 2] = acs_12col[:, 2] * fx2 + cx2  # x2_pix
-    out[:, 3] = acs_12col[:, 3] * fy2 + cy2  # y2_pix
-
-    # Recover A_pix from J_2x2: A = diag(f2) @ J @ diag(1/f1)
-    # J_2x2 stored col-major: J00=col6, J10=col7, J01=col9, J11=col10
-    out[:, 4] = acs_12col[:, 6]  * fx2 / fx1  # A00 = J00 * fx2 / fx1
-    out[:, 5] = acs_12col[:, 9]  * fx2 / fy1  # A01 = J01 * fx2 / fy1
-    out[:, 6] = acs_12col[:, 7]  * fy2 / fx1  # A10 = J10 * fy2 / fx1
-    out[:, 7] = acs_12col[:, 10] * fy2 / fy1  # A11 = J11 * fy2 / fy1
-
-    return np.ascontiguousarray(out, dtype=np.float32)
-
-
-def run_gs_2ac_pygcransac(acs_12col, K1, K2, H, W, args):
-    """Run pygcransac's AC-based essential matrix solver.
-
-    Returns (E_est, R_est, t_est, elapsed_ms, inliers).
-    """
-    if pygcransac is None:
-        raise ImportError(
-            "The 'gs_2ac' baseline requires pygcransac "
-            "(https://github.com/danini/graph-cut-ransac). Install it, or "
-            "omit gs_2ac from --methods.")
-    if acs_12col.shape[0] < 2:
-        return None, None, None, 0.0, []
-
-    # Convert to pygcransac format
-    acs8 = _acs12_to_pygcransac(acs_12col, K1, K2)
-
-    # Sampler mapping: our args → pygcransac integer
-    sampler_map = {"Uniform": 0, "PROSAC": 1, "PNAPSAC": 2}
-    sampler_id = sampler_map.get(args.sampler, 1)
-
-    tic = time.perf_counter()
-    E_est, mask = pygcransac.findEssentialMatrix(
-        acs8,
-        K1, K2,
-        int(H), int(W), int(H), int(W),
-        threshold=args.threshold,
-        sampler=sampler_id,
-        max_iters=args.max_iterations,
-        min_iters=args.min_iterations,
-        probabilities=[],
-        spatial_coherence_weight=0.0,
-        neighborhood=1,
-        neighborhood_size=20,
-        solver=2,  # AffineBased
-    )
-    toc = time.perf_counter()
-    elapsed_ms = (toc - tic) * 1e3
-
-    inliers = list(np.where(mask.flatten() > 0)[0]) if mask is not None else []
-
-    if E_est is None or len(inliers) == 0:
-        return E_est, None, None, elapsed_ms, inliers
-
-    # Decompose E → R, t using inlier normalised coordinates
-    norm1 = acs_12col[inliers, :2]
-    norm2 = acs_12col[inliers, 2:4]
-    _, R, t, _ = cv2.recoverPose(E_est, norm1, norm2)
-    return E_est, R, t[:, 0], elapsed_ms, inliers
 
 
 def extract_pose_from_rs_model(model_8x3):
@@ -537,21 +447,6 @@ def process_pair_ransac(pair_idx, data, acs, args):
                     R_err, t_err = errs[0], errs[1]
                 omega_err, v_err = float("nan"), float("nan")
 
-            elif method == "gs_2ac":
-                # GS 2-AC baseline via pygcransac's AC-based essential matrix solver
-                _, R_est, t_est, time_ms, inliers = run_gs_2ac_pygcransac(
-                    acs, K1, K2, H, W, args)
-                n_inliers = len(inliers)
-
-                if R_est is None or n_inliers < 2:
-                    R_err, t_err = 180.0, 180.0
-                else:
-                    errs = evaluate_R_t(R_gt, t_gt, R_est,
-                                        t_est if t_est is not None else np.zeros(3))
-                    R_err, t_err = errs[0], errs[1]
-                # GS baseline: no RS params
-                omega_err, v_err = float("nan"), float("nan")
-
         except Exception as e:
             print(f"  [pair {pair_idx}, {method}] estimation failed: {e}")
             R_err, t_err = 180.0, 180.0
@@ -594,11 +489,10 @@ def main():
         "rs_ac", "ac_rs_7direct",              # our RS methods
         "dai_20pt", "dai_44pt",                # Dai et al. (CVPR 2016) RS baselines
         "gs_5pt",                              # GS baseline (5 PCs)
-        "gs_2ac",                              # GS baseline (2 ACs, Barath & Hajder 2018)
     ]
     parser.add_argument("--methods", type=str, nargs="+",
                         choices=ALL_METHODS,
-                        default=["rs_ac", "ac_rs_7direct", "dai_20pt", "dai_44pt", "gs_5pt", "gs_2ac"])
+                        default=["rs_ac", "ac_rs_7direct", "dai_20pt", "dai_44pt", "gs_5pt"])
     parser.add_argument("--features", type=str, default="KeyNetAffNetHardNet",
                         choices=["KeyNetAffNetHardNet", "RoMa"],
                         help="Feature extractor for affine correspondences")
