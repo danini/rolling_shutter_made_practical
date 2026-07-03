@@ -61,21 +61,38 @@ def main():
     ap.add_argument("--device", default="cuda")
     args, extra = ap.parse_known_args()
 
+    # The tester is launched with cwd set to its own directory (so its
+    # imports resolve), so any path we forward must be absolute — otherwise a
+    # relative --dataset_root/--output would resolve against the wrong dir.
+    dataset_root = os.path.abspath(args.dataset_root)
+    output = os.path.abspath(args.output)
+
     if not os.path.isfile(TESTER):
         sys.exit(f"Tester not found at {TESTER}\n"
                  "Run:  git submodule update --init external/superansac && "
                  "bash rs_overlay/apply_overlay.sh")
-    if not os.path.isdir(os.path.join(args.dataset_root, "euroc")):
-        sys.exit(f"No dataset under {args.dataset_root}/euroc.\n"
+    if not os.path.isdir(os.path.join(dataset_root, "euroc")):
+        sys.exit(f"No dataset under {dataset_root}/euroc.\n"
                  f"Run:  bash examples/download_tum_rs.sh {args.dataset_root} "
                  f"{' '.join(map(str, args.sequences))}")
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
+    os.makedirs(os.path.dirname(output), exist_ok=True)
+
+    # The tester runs in this same interpreter (sys.executable). RoMa AC
+    # extraction needs torch + romatch on a CUDA GPU; warn early (soft, since
+    # a pre-computed AC cache makes them unnecessary) rather than crash deep
+    # inside extraction with an opaque traceback.
+    import importlib.util
+    if args.features == "RoMa" and importlib.util.find_spec("romatch") is None:
+        print("NOTE: 'romatch' is not importable in this Python "
+              f"({sys.executable}). RoMa AC extraction will fail unless the "
+              "ACs are already cached. Install torch+kornia+romatch and run "
+              "with that environment — see INSTALL.md.", file=sys.stderr)
 
     cmd = [
         sys.executable, TESTER,
         "--dataset", "tum_rs",
-        "--dataset_root", args.dataset_root,
+        "--dataset_root", dataset_root,
         "--sequences", *map(str, args.sequences),
         "--strides", *map(str, args.strides),
         "--max_pairs", str(args.max_pairs),
@@ -85,7 +102,7 @@ def main():
         "--sampler", args.sampler,
         "--threshold", str(args.threshold),
         "--max_iterations", str(args.max_iterations),
-        "--output", args.output,
+        "--output", output,
         "--device", args.device,
         *extra,
     ]
