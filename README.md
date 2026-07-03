@@ -1,8 +1,5 @@
 # Rolling Shutter Relative Pose Estimation Made Practical
 
-Official implementation of **"Rolling Shutter Relative Pose Estimation Made Practical"**
-(Daniel Barath, ETH Zürich / Google / HUN-REN SZTAKI).
-
 <p align="center">
   <img src="assets/rs_pair_acs.png" width="80%"/>
 </p>
@@ -36,8 +33,8 @@ Pose AUC (higher is better) and median RS velocity errors `ε_ω`/`ε_v`
 | **Proposed (7-AC)**  | **0.897** | **0.948** | **0.973** | **0.043** | **0.051** | 7.5 |
 
 The proposed solver is the most accurate in pose **and** the only RS solver
-with usable translational-velocity estimates (baselines' `ε_v` ≈ 8–13), while
-running ~6× faster than RS-44PC. On the global-shutter EuRoC MAV dataset it
+with usable translational-velocity estimates (baselines' `ε_v` ≈ 8–13). 
+On the global-shutter EuRoC MAV dataset, it
 matches GS-5PC and correctly recovers near-zero RS motion.
 
 ## Repository layout
