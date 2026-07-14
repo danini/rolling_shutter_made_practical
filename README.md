@@ -1,5 +1,7 @@
 # Rolling Shutter Relative Pose Estimation Made Practical
 
+The official implementation of [paper](https://arxiv.org/abs/2606.26863).
+
 <p align="center">
   <img src="assets/rs_pair_acs.png" width="80%"/>
 </p>
